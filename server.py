@@ -81,7 +81,6 @@ class LocalPlayer:
         self.x += self.speed_x
         self.y += self.speed_y
 
-        #ToDO
         # Синхронизируем с БД
         self.db.x = self.x
         self.db.y = self.y
