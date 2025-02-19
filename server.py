@@ -41,6 +41,18 @@ def find(vector: str):
     return ""
 
 
+def find_color(info: str):
+    first = None
+    for num, sign in enumerate(info):
+        if sign == "<":
+            first = num
+        if sign == ">" and first is not None:
+            second = num
+            result = info[first + 1:second].split(",")
+            return result
+    return ""
+
+
 class Player(Base):
     __tablename__ = "gamers"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -53,6 +65,9 @@ class Player(Base):
     abs_speed = Column(Integer, default=2)
     speed_x = Column(Integer, default=2)
     speed_y = Column(Integer, default=2)
+    color = Column(String(250), default="red")  # Добавили цвет
+    w_vision = Column(Integer, default=800)
+    h_vision = Column(Integer, default=600)
 
     def __init__(self, name, address):
         self.name = name
@@ -76,6 +91,9 @@ class LocalPlayer:
         self.abs_speed = 1
         self.speed_x = 0
         self.speed_y = 0
+        self.color = "red"
+        self.w_vision = 800
+        self.h_vision = 600
 
     def update(self):
         self.x += self.speed_x
@@ -109,7 +127,11 @@ while server_works:
         new_socket, addr = main_socket.accept()  # принимаем входящие
         print('Подключился', addr)
         new_socket.setblocking(False)
+        login = new_socket.recv(1024).decode()
         player = Player("Имя", addr)
+        if login.startswith("color"):
+            data = find_color(login[6:])
+            player.name, player.color = data
         s.merge(player)
         s.commit()
 
@@ -152,7 +174,7 @@ while server_works:
         x = player.x * WIDHT_SERVER // WIDHT_ROOM
         y = player.y * HEIGHT_SERVER // HEIGHT_ROOM
         size = player.size * WIDHT_SERVER // WIDHT_ROOM
-        pygame.draw.circle(screen, "yellow2", (x, y), size)
+        pygame.draw.circle(screen, player.color, (x, y), size)
 
     for id in list(players):
         player = players[id]
