@@ -81,6 +81,15 @@ class LocalPlayer:
         self.x += self.speed_x
         self.y += self.speed_y
 
+        #ToDO
+        # Синхронизируем с БД
+        self.db.x = self.x
+        self.db.y = self.y
+        self.db.speed_x = self.speed_x
+        self.db.speed_y = self.speed_y
+        s.merge(self.db)
+        s.commit()
+
     def change_speed(self, vector):
         vector = find(vector)
         if vector[0] == 0 and vector[1] == 0:
