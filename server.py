@@ -29,6 +29,18 @@ pygame.display.set_caption("Сервер")
 clock = pygame.time.Clock()
 
 
+def find(vector: str):
+    first = None
+    for num, sign in enumerate(vector):
+        if sign == "<":
+            first = num
+        if sign == ">" and first is not None:
+            second = num
+            result = map(int, vector[first + 1:second].split(","))
+            return result
+    return ""
+
+
 class Player(Base):
     __tablename__ = "gamers"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -38,9 +50,9 @@ class Player(Base):
     y = Column(Integer, default=500)
     size = Column(Integer, default=50)
     errors = Column(Integer, default=0)
-    abs_speed = Column(Integer, default=1)
-    speed_x = Column(Integer, default=0)
-    speed_y = Column(Integer, default=0)
+    abs_speed = Column(Integer, default=2)
+    speed_x = Column(Integer, default=2)
+    speed_y = Column(Integer, default=2)
 
     def __init__(self, name, address):
         self.name = name
@@ -65,14 +77,25 @@ class LocalPlayer:
         self.speed_x = 0
         self.speed_y = 0
 
+    def update(self):
+        self.x += self.speed_x
+        self.y += self.speed_y
+
+    def change_speed(self, vector):
+        vector = find(vector)
+        if vector[0] == 0 and vector[1] == 0:
+            self.speed_x = self.speed_y = 0
+        else:
+            vector = vector[0] * self.abs_speed, vector[1] * self.abs_speed
+            self.speed_x = vector[0]
+            self.speed_y = vector[1]
+
 
 players = {}
 server_works = True
 while server_works:
     clock.tick(FPS)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            server_works = False
+
     try:
         # проверяем желающих войти в игру
         new_socket, addr = main_socket.accept()  # принимаем входящие
@@ -96,6 +119,7 @@ while server_works:
         try:
             data = players[id].sock.recv(1024).decode()
             print("Получил", data)
+            players[id].change_speed(data)
         except:
             pass
 
@@ -110,6 +134,24 @@ while server_works:
             s.query(Player).filter(Player.id == id).delete()
             s.commit()
             print("Сокет закрыт")
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            server_works = False
+    screen.fill('black')
+    for id in list(players):
+        player = players[id]
+        x = player.x * WIDHT_SERVER // WIDHT_ROOM
+        y = player.y * HEIGHT_SERVER // HEIGHT_ROOM
+        size = player.size * WIDHT_SERVER // WIDHT_ROOM
+        pygame.draw.circle(screen, "yellow2", (x, y), size)
+
+    for id in list(players):
+        player = players[id]
+        players[id].update()
+
+    pygame.display.update()
+
 pygame.quit()
 main_socket.close()
 s.query(Player).delete()
