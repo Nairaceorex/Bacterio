@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import sessionmaker
+import pygame
 
 main_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Настраиваем сокет
 main_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # Отключаем пакетирование
@@ -17,6 +18,15 @@ engine = create_engine("postgresql+psycopg2://naira:11111@localhost/rebotica")
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 s = Session()
+
+pygame.init()
+WIDHT_ROOM, HEIGHT_ROOM = 4000, 4000
+WIDHT_SERVER, HEIGHT_SERVER = 300, 300
+FPS = 100
+
+screen = pygame.display.set_mode((WIDHT_SERVER, HEIGHT_SERVER))
+pygame.display.set_caption("Сервер")
+clock = pygame.time.Clock()
 
 
 class Player(Base):
@@ -57,7 +67,12 @@ class LocalPlayer:
 
 
 players = {}
-while True:
+server_works = True
+while server_works:
+    clock.tick(FPS)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            server_works = False
     try:
         # проверяем желающих войти в игру
         new_socket, addr = main_socket.accept()  # принимаем входящие
@@ -95,7 +110,7 @@ while True:
             s.query(Player).filter(Player.id == id).delete()
             s.commit()
             print("Сокет закрыт")
-
-    time.sleep(1)
-
-    time.sleep(1)
+pygame.quit()
+main_socket.close()
+s.query(Player).delete()
+s.commit()
